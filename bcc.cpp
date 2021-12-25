@@ -48,17 +48,15 @@ void printarray(vector<int> a) {
 		printf(",%d", a[i]);
 	}
 	printf("}\n");
+	return;
 }
 
-void printarrayarray(vector<vector<int>> a) {
-	int len = a.size();
-	if (len==0) {
-		printf("empty\n");
-		return;
-	}
-	for (int i=1; i<len; i++) {
+void printall(vector<vector<int>> a) {
+	for (int i=0; i<(int)a.size(); i++){
+		printf("%d : ", i+1);
 		printarray(a[i]);
 	}
+	return;
 }
 
 int indiceoffirstzero(vector<int> s, int m) { //a ameliorer
@@ -72,25 +70,17 @@ int indiceoffirstzero(vector<int> s, int m) { //a ameliorer
 	return c;
 }
 
-bool isadmissible(vector<int> b, vector<int> s, int n, int i) {
-	bool r = false;
-	if (s[i] != n && s[i] != n-1 && s[i+1] != n && s[i+1] != n-1) {
-		r = true;
+void rwprint(vector<int> rw) {
+	int total = 0;
+	for(int i=0; i<3; i++) {
+		total += rw[i];
 	}
-	return r;
-}
-
-vector<int> listofnextindices(vector<int> b, vector<int> s, int n, int mu) { //on recalcule pas s
-	int d = (int)b.size();
-	//int mu = indiceoffirstzero(s);
-	vector<int> l;
-	int c = b[d-1]+1;
-	for (int i=c; i<=mu; i++) {
-		if (s[i] != n && s[i] != n-1 && s[i+1] != n && s[i+1] != n-1 && (s[i+2] != n || s[i+3] != n) && (s[i+2] != n-1 || s[i+3] != n-1) /*isadmissible(b, s, n, i)*/) {//pruner efficacement ici peut sauver beaucoup de temps, au moins 80%.
-			l.push_back(i);
-		}
+	vector<double> d(3, 0);
+	for(int i=0; i<3; i++) {
+		d[i] = 100*((double)rw[i])/((double)total);
 	}
-	return l;
+	int e = (int)d[0];
+	printf("Efficacité de Cerbère : %d %% \n", e);
 }
 
 void displaytimevector(vector<long int> t) {
@@ -113,92 +103,152 @@ void displaytimevector(vector<long int> t) {
 	printf("mu : %lf\n", 100*d[8]);
 }
 
-void bfs(vector<int> start, vector<int> sq, int n, int m, vector<vector<int>> * e, int k1) {
-	int k = (int)start.size();
-	if (k==k1) {
-		(*e).push_back(start);
+bool prunecondition(vector<int> b, vector<int> s, int n, int i, int k, int c, int mu) { // k = b.size(), c = b[k-1] + 1
+	bool cerbere = true; //meilleur videur du monde
+	int ssize = (int)s.size();
+	if (i>=ssize) {
+		return cerbere;
 	}
+	if (s[i] > n-2) {
+		cerbere = false;
+	}
+	if (i+1 < ssize && s[i+1] > n-2) {
+		cerbere = false;
+	}
+	if (k > 2) {
+		int b2 = b[2];
+		if (b2 == 2 && i+2 < ssize) {
+			if (s[i+2] > n-2) {
+				cerbere = false;
+			}
+		}
+		if (b2 == 3 && i+3 < ssize) {
+			if (s[i+3] > n-2) {
+				cerbere = false;
+			}
+		}
+	}
+	if (k > 3) {
+		int b3 = b[3];
+		if (b3 == 3 && i+3 < ssize) {
+			if (s[i+3] > n-2) {
+				cerbere = false;
+			}
+		}
+		if (b3 == 4 && i+4 < ssize) {
+			if (s[i+4] > n-2) {
+				cerbere = false;
+			}
+		}
+		if (b3 == 5 && i+5 < ssize) {
+			if (s[i+5] > n-2) {
+				cerbere = false;
+			}
+		}
+	}
+	return cerbere;
+}
+
+void bfs(vector<int> start, vector<int> sq, int n, int m, vector<vector<int>> * ev, int k1) {
+	int k = (int)start.size();	
+	if (k == k1) {
+		(*ev).push_back(start);
+	}
+	
 	int mu = indiceoffirstzero(sq, m);
-	vector<int> l = listofnextindices(start, sq, n, mu);
-	for (int i=0; i<(int)l.size(); i++) {
-		bool smallerthann = true;
-		bool * bptr = &smallerthann;
-		vector<int> st = usquare(sq, start, l[i], bptr, n);		
-		if(*bptr) {
-			if (k < k1) {
-				vector<int> t = start;
-				t.push_back(l[i]);
-				bfs(t, st, n, mu, e, k1);
+	int c = start[k-1]+1;
+	
+	for (int i=c; i<=mu; i++) {
+		if (prunecondition(start, sq, n, i, k, c, mu)) {
+			bool smallerthann = true;
+			vector<int> st = usquare(sq, start, i, &smallerthann, n);
+			if(smallerthann) {
+				if (k < k1) {
+					start.push_back(i);
+					bfs(start, st, n, mu, ev, k1);
+					start.pop_back();
+				}
 			}
 		}
 	}
 	return;
 }
 
-void e(int k, int n, vector<vector<int>> * eptr) {
+void e(int k, int n, vector<vector<int>> * ev) {
 	vector<int> b = {0};
 	vector<int> s = square(b);
 	int m = 0;
-	bfs(b, s, n, m, eptr, k);
+	bfs(b, s, n, m, ev, k);
 	return;
 }
 
-void is_tree_finite(vector<int> start, vector<int> sq, int n, vector<int> * ptr, vector<int> * rw, vector<long int> * timev, int m) { //start est sous forme de base
+void is_tree_finite(vector<int> start, vector<int> sq, int n, vector<int> * ptr, vector<int> * rwt, vector<long int> * timev, int m, int kmax) { //start est sous forme de base
 	int k = (int)start.size();
 	(*ptr)[k]++;
 	//printarray(start);
 	//printarray(*ptr);
-	//printarray(*rw);
+	//printarray(*rwt);
 	
-	int mu = indiceoffirstzero(sq, m);
-	vector<int> l = listofnextindices(start, sq, n, mu);
-	//int c = start[k-1]+1;
+	if (k >= kmax) {
+		return;
+	}
 	
-	for (int i=0; i<(int)l.size(); i++) {
-		bool smallerthann = true;
-		bool * bptr = &smallerthann;
-		vector<int> st = usquare(sq, start, l[i], bptr, n);
-		
-		//auto t11 = high_resolution_clock::now();
-		/*auto timev4 = duration_cast<nanoseconds>(t8 - t7);
-		(*timev)[4] += timev4.count();*/
-		
-		if(*bptr) {
-			if (k < 14) {
-				vector<int> t = start;
-				t.push_back(l[i]);
-				is_tree_finite(t, st, n, ptr, rw, timev, mu);
-				(*rw)[0]++;
+	int mu = indiceoffirstzero(sq, m); //optimisation possible
+	int c = start[k-1]+1;
+	
+	for (int i=c; i<=mu; i++) {
+		//condition de prunage
+		if (prunecondition(start, sq, n, i, k, c, mu)) { //optimisation tres possible
+			bool smallerthann = true;
+			vector<int> st = usquare(sq, start, i, &smallerthann, n);
+			if(smallerthann) {
+				if (k < kmax) {
+					//vector<int> t = start;
+					start.push_back(i);
+					is_tree_finite(start, st, n, ptr, rwt, timev, mu, kmax);
+					start.pop_back();
+					(*rwt)[0]++;
+				}
+				else {
+					(*rwt)[2]++;
+				}
 			}
-		}
-		else {
-			(*rw)[1]++;
+			else {
+				(*rwt)[1]++;
+			}
 		}
 	}
 	return;
 }
 
 int main() {
+	
+	unsigned int nthreads = thread::hardware_concurrency();
+	printf("threads %d\n", (int)nthreads);
+	
 	vector<int> b = {0};
 	vector<int> s = square(b);
 	
 	vector<int> counter(20, 0);
 	vector<int> * ptr = &counter;
 	
-	vector<int> rw = {0, 0};
+	vector<int> rw = {0, 0, 0};
 	vector<int> * rwptr = &rw;
 	
 	vector<long int> tv(9, 0);
 	vector<long int> * timev = &tv;
 	
-	/*vector<vector<int>> estart;
-	vector<vector<int>> * elist = &estart;
-	e(6, 6, elist);
-	printarrayarray(*elist);*/
+	vector<vector<int>> ev = {};
+	vector<vector<int>> * evptr = &ev;
+	e(5, 6, evptr);
+	printall(ev);
 	
-	is_tree_finite(b, s, 6, ptr, rwptr, timev, 0);
+	printf("\n");
+	
+	is_tree_finite(b, s, 6, ptr, rwptr, timev, 0, 16);
 	printarray(*ptr);
 	printarray(*rwptr);
+	rwprint(*rwptr);
 	
 	//displaytimevector(*timev);
 	
