@@ -21,9 +21,8 @@ vector<int> square(vector<int> b) {
 	return s;
 }
 
-vector<int> usquare(vector<int> s, vector<int> b, int l, bool * bptr, int n) { //inclure calcul du max ?
+vector<int> usquare(vector<int> s, vector<int> & b, int l, bool * bptr, int n) {
 	int d = b.size();
-	//vector<int> r = s;
 	s.resize(2*l +1, 0);
 	for (int i=0; i<d; i++) {
 		if (s[l+b[i]] > n-2) {
@@ -34,6 +33,42 @@ vector<int> usquare(vector<int> s, vector<int> b, int l, bool * bptr, int n) { /
 	}
 	s[l+l]++;
 	return s;
+}
+
+void rusquare(vector<int> &s, vector<int> & b, int l, bool * bptr, int n) {
+	int d = b.size();
+	s.resize(2*l +1, 0);
+	for (int i=0; i<d; i++) {
+		if (s[l+b[i]] > n-2) {
+			*bptr = false;
+			return;
+		}
+		s[l+b[i]] += 2;
+	}
+	s[l+l]++;
+}
+
+vector<int> desquare(vector<int> s, vector<int> & b, int l, int n) {
+	s[l+l]--;
+	int d = b.size();
+	s.resize(2*l +1, 0);
+	for (int i=0; i<d; i++) {
+		s[l+b[i]] -= 2;
+	}
+	int u = b[d-1];
+	s.resize(2*u +1, 0);
+	return s;
+}
+
+void rdesquare(vector<int> & s, vector<int> & b, int l, int n) {
+	s[l+l]--;
+	int d = b.size();
+	s.resize(2*l +1, 0);
+	for (int i=0; i<d; i++) {
+		s[l+b[i]] -= 2;
+	}
+	int u = b[d-1];
+	s.resize(2*u +1, 0);
 }
 
 void printarray(vector<int> a) {
@@ -59,7 +94,7 @@ void printall(vector<vector<int>> a) {
 	return;
 }
 
-int indiceoffirstzero(vector<int> s, int m) { //a ameliorer
+int indiceoffirstzero(vector<int> & s, int m) { //a ameliorer
 	int c = (int)s.size();
 	for(int i=m; i<(int)s.size(); i++) {
 		if (s[i] == 0) {
@@ -70,11 +105,13 @@ int indiceoffirstzero(vector<int> s, int m) { //a ameliorer
 	return c;
 }
 
-void rwprint(vector<int> rw) {
-	int total = 0;
+void rwprint(vector<long int> rw) {
+	long int total = 0;
 	for(int i=0; i<3; i++) {
+		printf("%li  ", rw[i]);
 		total += rw[i];
 	}
+	printf("\n");
 	vector<double> d(3, 0);
 	for(int i=0; i<3; i++) {
 		d[i] = 100*((double)rw[i])/((double)total);
@@ -103,7 +140,7 @@ void displaytimevector(vector<long int> t) {
 	printf("mu : %lf\n", 100*d[8]);
 }
 
-bool prunecondition(vector<int> b, vector<int> s, int n, int i, int k, int c, int mu) { // k = b.size(), c = b[k-1] + 1
+bool prunecondition(vector<int> & b, vector<int> & s, int n, int i, int k, int c, int mu) { // k = b.size(), c = b[k-1] + 1
 	bool cerbere = true; //meilleur videur du monde
 	int ssize = (int)s.size();
 	if (i>=ssize) {
@@ -182,7 +219,7 @@ void e(int k, int n, vector<vector<int>> * ev) {
 	return;
 }
 
-void is_tree_finite(vector<int> start, vector<int> sq, int n, vector<int> * ptr, vector<int> * rwt, vector<long int> * timev, int m, int kmax) { //start est sous forme de base
+void is_tree_finite(vector<int> & start, vector<int> & sq, int n, vector<int> * ptr, vector<long int> * rwt, vector<long int> * timev, int m, int kmax) { //start est sous forme de base
 	int k = (int)start.size();
 	(*ptr)[k]++;
 	//printarray(start);
@@ -201,12 +238,14 @@ void is_tree_finite(vector<int> start, vector<int> sq, int n, vector<int> * ptr,
 		if (prunecondition(start, sq, n, i, k, c, mu)) { //optimisation tres possible
 			bool smallerthann = true;
 			vector<int> st = usquare(sq, start, i, &smallerthann, n);
+			//rusquare(sq, start, i, &smallerthann, n);
 			if(smallerthann) {
 				if (k < kmax) {
-					//vector<int> t = start;
 					start.push_back(i);
 					is_tree_finite(start, st, n, ptr, rwt, timev, mu, kmax);
 					start.pop_back();
+					//vector<int> a = desquare(start, st, i, n);
+					//if (a != sq) printf("wrong desquare");
 					(*rwt)[0]++;
 				}
 				else {
@@ -223,8 +262,8 @@ void is_tree_finite(vector<int> start, vector<int> sq, int n, vector<int> * ptr,
 
 int main() {
 	
-	unsigned int nthreads = thread::hardware_concurrency();
-	printf("threads %d\n", (int)nthreads);
+	/*unsigned int nthreads = thread::hardware_concurrency();
+	printf("threads %d\n", (int)nthreads);*/
 	
 	vector<int> b = {0};
 	vector<int> s = square(b);
@@ -232,22 +271,21 @@ int main() {
 	vector<int> counter(20, 0);
 	vector<int> * ptr = &counter;
 	
-	vector<int> rw = {0, 0, 0};
-	vector<int> * rwptr = &rw;
+	vector<long int> rw = {0, 0, 0};
+	vector<long int> * rwptr = &rw;
 	
 	vector<long int> tv(9, 0);
 	vector<long int> * timev = &tv;
 	
-	vector<vector<int>> ev = {};
+	/*vector<vector<int>> ev = {};
 	vector<vector<int>> * evptr = &ev;
 	e(5, 6, evptr);
 	printall(ev);
 	
-	printf("\n");
+	printf("\n");*/
 	
-	is_tree_finite(b, s, 6, ptr, rwptr, timev, 0, 16);
+	is_tree_finite(b, s, 6, ptr, rwptr, timev, 0, 14);
 	printarray(*ptr);
-	printarray(*rwptr);
 	rwprint(*rwptr);
 	
 	//displaytimevector(*timev);
