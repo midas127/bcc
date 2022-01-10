@@ -4,6 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <bits/stdc++.h>
+#include <typeinfo>
 
 using namespace std;
 using namespace std::chrono;
@@ -48,10 +49,9 @@ void rusquare(vector<int> &s, vector<int> & b, int l, bool * bptr, int n) {
 	s[l+l]++;
 }
 
-vector<int> desquare(vector<int> s, vector<int> & b, int l, int n) {
+vector<int> desquare(vector<int> s, vector<int> & b, int l) {
 	s[l+l]--;
 	int d = b.size();
-	s.resize(2*l +1, 0);
 	for (int i=0; i<d; i++) {
 		s[l+b[i]] -= 2;
 	}
@@ -60,16 +60,7 @@ vector<int> desquare(vector<int> s, vector<int> & b, int l, int n) {
 	return s;
 }
 
-void rdesquare(vector<int> & s, vector<int> & b, int l, int n) {
-	s[l+l]--;
-	int d = b.size();
-	s.resize(2*l +1, 0);
-	for (int i=0; i<d; i++) {
-		s[l+b[i]] -= 2;
-	}
-	int u = b[d-1];
-	s.resize(2*u +1, 0);
-}
+
 
 void printarray(vector<int> a) {
 	int len = a.size();
@@ -244,8 +235,6 @@ void is_tree_finite(vector<int> & start, vector<int> & sq, int n, vector<int> * 
 					start.push_back(i);
 					is_tree_finite(start, st, n, ptr, rwt, timev, mu, kmax);
 					start.pop_back();
-					//vector<int> a = desquare(start, st, i, n);
-					//if (a != sq) printf("wrong desquare");
 					(*rwt)[0]++;
 				}
 				else {
@@ -255,20 +244,29 @@ void is_tree_finite(vector<int> & start, vector<int> & sq, int n, vector<int> * 
 			else {
 				(*rwt)[1]++;
 			}
+			/*vector<int> a;
+			a = desquare(st, start, i);
+			if (a != sq) {
+				printf("wrong desquare \n");
+				printf("start ");
+				printarray(start);
+				printf("sq ");
+				printarray(sq);
+				printf("i : %d\n", i);
+				printf("st ");
+				printarray(st);
+				printf("a: ");
+				printarray(a);
+			}*/
 		}
 	}
 	return;
 }
 
-int main() {
-	
-	/*unsigned int nthreads = thread::hardware_concurrency();
-	printf("threads %d\n", (int)nthreads);*/
-	
-	vector<int> b = {0};
+void searchwithonethread(int depth, int n, int countersize, vector<int> b) {
 	vector<int> s = square(b);
 	
-	vector<int> counter(20, 0);
+	vector<int> counter(countersize, 0);
 	vector<int> * ptr = &counter;
 	
 	vector<long int> rw = {0, 0, 0};
@@ -277,18 +275,55 @@ int main() {
 	vector<long int> tv(9, 0);
 	vector<long int> * timev = &tv;
 	
-	/*vector<vector<int>> ev = {};
-	vector<vector<int>> * evptr = &ev;
-	e(5, 6, evptr);
-	printall(ev);
-	
-	printf("\n");*/
-	
-	is_tree_finite(b, s, 6, ptr, rwptr, timev, 0, 14);
+	is_tree_finite(b, s, n, ptr, rwptr, timev, 0, depth);
+	printarray(b);
 	printarray(*ptr);
 	rwprint(*rwptr);
+}
+
+/*void proxy(int depth, int n, int countersize, vector<vector<int>> worklist) {
+	for (int i=0; i<(int)worklist.size(); i++) {
+		searchwithonethread(depth, n, countersize, worklist[i]);
+	}
+}
+
+vector<vector<int>> createworklist(vector<vector<int>> ev, int nc, int id) {
+	int a = (int)ev.size();
+	vector<vector<int>> wl = {{}};
+	int l = a/nc;
+	for (int i=0; i<a; i++) {
+		if ((i >= l*id && i < l*(id+1) && id != nc-1) || (id == nc-1 && l>=l*id))
+		wl.push_back(ev[i]);
+	}
+	return wl;
+}*/
+
+void threadedsearch(int depth, int n, int countersize) {
+	int nthreads = (int)thread::hardware_concurrency();
+	printf("threads %d\n", nthreads);
 	
-	//displaytimevector(*timev);
+	vector<vector<int>> ev = {};
+	vector<vector<int>> * evptr = &ev;
+	e(4, n, evptr);
+	printall(ev);
 	
+	
+	std::vector<thread> threads(nthreads);
+	for (int i = 0; i < min(nthreads, (int)ev.size()); i++) {
+		vector<int> ei = ev[i];
+		threads[i] = thread(searchwithonethread, depth, n, countersize, ei);
+	}
+	for (auto& th : threads) {
+		th.join();
+		printf("thread joined \n");
+	}
+	printf("out of the loop");
+	return;
+}
+
+int main() {	
+	vector<int> b = {0};	
+	searchwithonethread(17, 6, 20, b);
+	//threadedsearch(17, 6, 50);	
 	return 0;
 }
